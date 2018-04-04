@@ -1,0 +1,88 @@
+﻿<!-- Custom HTML: Banner-->
+
+<div class="map_object <#sensor type="colorclassofstate" prefix="status-" mode="short" id="<@objectid>">" id="<@itemid>" objectid="<@objectid>" subid="<@subid>" style="min-width:100%;min-height:80px;<#mapobject type="coordinates" subid="<@subid>" mode="<@editmode>">">
+<#lang key="htm.ownhtmlonly.enterownhtml" default="Enter your own HTML in field 'HTML Before'!" var="ownhtml">
+    
+    <#mapobject type="htmlafter" subid="<@subid>">
+    <#mapobject varexpand="content" showfor="previewonly" content="@ownhtml">
+	<#objectproperty name="Name" id="<@objectid>" var="objectnametest">
+	
+	
+	<marquee Id="<@itemid>Banner" scrollamount="6" direction="left" style="background-color:#B8C419;min-height:80px;" >
+		<h1 Id="<@itemid>SlidingMessage" style="font-size:34px;color:black;">
+		</h1>
+	</marquee>
+	
+	<!--
+	184, 196, 25	#B8C419
+	245, 197, 0		#F5C500
+	227, 6, 19		#E30613
+	-->
+	
+	<div id="<@itemid>_JSON" style="visibility:hidden;height:0px;width:0px;">
+		<#table
+		  content="sensors"
+		  id="<@objectid>"
+		  columns="downtimesince,device,sensor,message"
+		  count="50"
+		  sortby="downtimesince"
+		  links="false"
+		  sortable="false"
+		  infoheader="false"
+		  output="json"
+		  noraw="0"
+		  filter_tags="@tag(<@tagfilterstring>)"
+		  filter_status="5">
+	</div>
+	
+	
+	<script type="text/javascript">
+	$(document).ready(function()
+	{
+		$HasRed = <#if value="@status" contains="hasred" then="true" else="false" varexpand="value,contains">;
+		$HasYellow = <#if value="@status" contains="hasyellow" then="true" else="false" varexpand="value,contains">;
+		$IsGreen = !($HasRed && $HasYellow);
+		$Tag = document.getElementById("<@itemid>Banner");
+		$Message = document.getElementById("<@itemid>SlidingMessage");
+		
+		$JsonTag = document.getElementById("<@itemid>_JSON");
+		$JSONParsed = JSON.parse($JsonTag.innerHTML.replace(/<(?:.|\n)*?>/gm, ''));
+		
+		$Status = '<#objectstatus name="status" show="textraw" id="<@objectid>">';
+		
+		$ColorValue = "";
+		if($HasRed)
+			$ColorValue = "#E30613";
+		else if($HasYellow)
+			$ColorValue = "#F5C500";
+		else
+			$ColorValue = "#B8C419";
+		
+		$Tag.style.backgroundColor = $ColorValue;
+		//$Tag.style.background = "linear-gradient(white, " + $ColorValue + ")";
+
+		$Up = '<#objectstatus name="upsens" show="textraw" id="<@objectid>">';
+		$Warnings = '<#objectstatus name="warnsens" show="textraw" id="<@objectid>">';
+		$Down = '<#objectstatus name="downsens" show="textraw" id="<@objectid>">';
+		
+		if($Up != '')
+			$Message.innerHTML += " " + $Up + " Up";
+		
+		if($Warnings != '')
+			$Message.innerHTML += ", " + $Warnings + " Warning";
+		
+		if($Down != '')
+			$Message.innerHTML += ", " + $Down + " Down";
+		
+		
+		
+		if($JSONParsed.sensors.length >= 1)
+		{
+			$ErrorSensor = $JSONParsed.sensors[0];
+			$ErrorMessage = $ErrorSensor.device + " - " + $ErrorSensor.sensor + ": " + $ErrorSensor.message_raw;
+			$Message.innerHTML += " - " + $ErrorMessage;
+		}
+
+	});
+	</script>
+</div>
