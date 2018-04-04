@@ -1,0 +1,220 @@
+<!-- Custom HTML: KPI Custom Channel-->
+<!-- 
+	Sensor Settings:
+		DisplayChannel=Foobar;
+		DisplayChange=arrow|number;
+		DisplayAvg=true|false;
+		DisplayMin=true|false;
+		DisplayMax=true|false;
+		DisplaySensorTitle=true|false;
+		DisplayChannelTitle=true|false;
+	Example:
+		HTMLBefore: DisplayChannel=Foobar;DisplayChange=number;DisplaySensorTitle=false;DisplayChannelTitle=true;
+-->
+<div class="map_object map_table <#sensor type="colorclassofstate" prefix="map_objectstate_" id="<@objectid>">" id="<@itemid>" objectid="<@objectid>" subid="<@subid>" style="min-height:150px;min-width:160px;<#mapobject type="coordinates" subid="<@subid>" mode="<@editmode>">">
+<#mapobject type="objectgrip" mode="<@editmode>">
+
+<#checkobjecttype objecttype="sensor" nicemessage="true" id="<@objectid>">
+
+<style>
+	.arrow-up {
+		height: 0px; width: 0px;
+		border: 8px solid;
+		border-color: 
+			mediumseagreen
+			mediumseagreen
+			transparent
+			transparent;
+		transform: rotate(-45deg);
+	}
+	
+	.arrow-down {
+		height: 0px; width: 0px;
+		border: 8px solid;
+		border-color: 
+			red
+			red
+			transparent
+			transparent;
+		transform: rotate(135deg);
+	}
+</style>
+
+<div id="<@itemid>KPIContainer" style="height:100%;background:linear-gradient(white, #B8C419);padding-left:10px;padding-right:10px;padding-bottom:14px;border-radius:4px;">
+	<center>
+		<table>
+			<tr height="40px;">
+				<td colspan="3" style="text-align:center;vertical-align:top;">
+					<div id="<@itemid>KPITitle" style="font-size:14px;height:40px;overflow:hidden;">
+						<#objectproperty name="Name" id="<@objectid>">
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3" style="text-align:center;">
+					<div style="font-size:22px;color:black;overflow:hidden;" id="<@itemid>ChannelTitle" />
+				</td>
+			</tr>
+			<tr>
+				<td>
+				</td>
+				<td style="text-align:center;padding:14px;">
+					<div style="font-size:32px;color:black;" id="<@itemid>Message" />
+				</td>
+				<td id="<@itemid>Difference" style="vertical-align:center;" align="center" valign="center">
+
+
+				</td>
+			</tr>
+			
+			<tr>
+				<td colspan="1">
+					<small style="text-align:left;">(Min)</small>
+					<b><div class="label" id="<@itemid>KPIMinVal" style="text-align:left;"></div></b>
+				</td>
+				<td colspan="1">
+					<small style="text-align:center;">(Avg)</small>
+					<b>
+						<div class="label" style="text-align:center;" id="<@itemid>KPIAvgVal" style=""></div>
+					</b>
+				</td>
+				<td colspan="1">
+					<small style="text-align:right;">(Max)</small>
+					<b><div class="label" id="<@itemid>KPIMaxVal" style="text-align:right;"></div></b>
+				</td>
+			</tr>
+		</table>
+	</center>
+
+</div>
+
+
+	<script>
+		
+	$Channels = {
+	  "objects":<#table
+	  id="<@objectid>"
+	  output="json"
+	  noraw="0"
+	  content="channels"
+	  sortby="name"
+	  columns="name,info=treejson,minimum,maximum,condition,lastvalue">
+	}
+
+	function GetPrimaryChannel($JSON)
+	{
+		var $Primary = $JSON.objects.channels.filter(function (C) {
+			var $Primary = C.info.data.filter(function (D) {
+				return D.primary === true;
+			})[0];
+			return typeof $Primary !== 'undefined';
+		})[0];
+		
+		return $Primary;
+	}
+
+	function GetChannelByName($JSON, $Name)
+	{
+		var $Channel = $JSON.objects.channels.filter(function (C) {
+			return C.name === $Name;
+		})[0];
+		
+		return $Channel;
+	}
+
+	function ParseSettings($SettingsStr)
+	{
+		$Settings = Array();
+		$IndividualSettings = $SettingsStr.split(";");
+		for($i = 0; $i < $IndividualSettings.length; $i++)
+		{
+			$S = $IndividualSettings[$i].split("=");
+			$Settings[$S[0]] = $S[1];
+		}
+
+		return $Settings;
+	}
+
+	// Disable Javascript to prevent errors when not assigned to a sensor
+	if('<#objectproperty type="nodename" id="<@objectid>">' === 'sensor')
+	{
+	
+		// Global variable used for displaying change in value upon map refresh (arrow up/down)
+		if(typeof parent['GLOBAL_<@itemid>_LAST_VALUE'] === 'undefined')
+		{
+			parent['GLOBAL_<@itemid>_LAST_VALUE'] = 0;
+			console.log("Global not found.");
+		}
+		
+	
+		$HTMLBefore = '<#mapobject type="htmlbefore" subid="<@subid>">';
+		$Settings = ParseSettings($HTMLBefore);
+		
+		$Red = "#E30613DC";
+		$Yellow = "#F5C500DC";
+		$Green = "#B8C419DC";
+		$OutputColour = $Green;
+				
+		$JsonTag = document.getElementById("<@itemid>JsonTag");
+		$MessageTag = document.getElementById("<@itemid>Message");
+		$ChannelTitle = document.getElementById("<@itemid>ChannelTitle");
+		$MinVal = document.getElementById("<@itemid>KPIMinVal");
+		$MaxVal = document.getElementById("<@itemid>KPIMaxVal");
+		$AvgVal = document.getElementById("<@itemid>KPIAvgVal");
+		$DiffTag = document.getElementById("<@itemid>Difference");
+		
+		// Fallback
+		$Channel = GetPrimaryChannel($Channels);
+
+		if(typeof $Settings["DisplayChannel"] !== 'undefined')
+		{
+			$FindChannel = GetChannelByName($Channels, $Settings["DisplayChannel"]);
+			if(typeof $FindChannel !== 'undefined')
+				$Channel = $FindChannel;
+			else
+				console.log("Could not find a channel by name: " + $Settings["DisplayChannel"]);
+		}
+		
+		if(typeof $Channel !== 'undefined')
+		{
+			$ChannelTitle.innerHTML = $Channel.name;
+			$MinVal.innerHTML = $Channel.minimum_raw;
+			$MaxVal.innerHTML = $Channel.maximum_raw;
+
+			if(typeof $Channel.info.data[0].averageraw !== 'undefined')
+				$AvgVal.innerHTML = $Channel.info.data[0].averageraw.toFixed(0);
+			
+			$Diff = $Channel.lastvalue_raw - parent['GLOBAL_<@itemid>_LAST_VALUE'];
+			
+			if(typeof $Channel.info.data[0].lookups !== 'undefined')
+				$MessageTag.innerHTML = $Channel.lastvalue;
+			else
+				$MessageTag.innerHTML = $Channel.lastvalue_raw;
+			
+			if(parent['GLOBAL_<@itemid>_LAST_VALUE'] !== 0)
+			{
+				if($Diff > 0)
+					$DiffTag.innerHTML = '<div class="arrow-up"></div>'; //$DiffTag.innerHTML = "<small>+" + $Diff + "</small>";
+				else if($Diff < 0)
+					$DiffTag.innerHTML = '<div class="arrow-down"></div>';//"<small>" + $Diff + "</small>";
+			}
+			
+			
+			$ErrorLimit = $Channel.info.data[0].limitmaxerror;
+			$WarningLimit = $Channel.info.data[0].limitmaxwarning;
+			
+
+			if($Channel.lastvalue_raw >= $WarningLimit)
+				$OutputColour = $Yellow;
+			else if($Channel.lastvalue_raw >= $ErrorLimit)
+				$OutputColour = $Red;
+			
+			document.getElementById("<@itemid>KPIContainer").style.background = "linear-gradient(white, " + $OutputColour + ")";
+			
+			parent['GLOBAL_<@itemid>_LAST_VALUE'] = $Channel.lastvalue_raw;
+		}
+	}
+
+	</script>
+	
+</div>
