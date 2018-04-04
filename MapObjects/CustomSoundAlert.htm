@@ -1,0 +1,71 @@
+﻿<!-- Sound Alerts: Custom Sound Alert (Warning + Down) -->
+<!-- 
+	Sensor Settings:
+		WarningAlarm=Foobar.ogg;
+		ErrorAlarm=Foobar.ogg;
+	Example:
+		HTMLBefore: WarningAlarm=Foobar.ogg;ErrorAlarm=Foobar.ogg;
+		HTMLBefore: WarningAlarm=Foobar.ogg
+		HTMLBefore: ErrorAlarm=Foobar.ogg
+-->
+<div class="map_object" id="<@itemid>" objectid="<@objectid>" subid="<@subid>" style="<#mapobject type="topleftcoordinates" subid="<@subid>" mode="<@editmode>">">
+	<#mapobject type="objectgrip" mode="<@editmode>">
+	<#mapobject type="htmlafter" subid="<@subid>">
+	
+	<#sensor type="colorclassofstate" id="<@objectid>" var="status">
+	<#objectproperty type="nodename" id="<@objectid>" var="nodename">
+	
+	<b></b>
+	<audio id="<@itemid>customalarm" <#if value="<@editmode>" is="edit" then="controls" else="" varexpand="value,contains">>
+		
+	</audio>
+	
+	<script type="text/javascript">
+	
+	$HTMLBefore = '<#mapobject type="htmlbefore" subid="<@subid>">';
+	$Settings = ParseSettings($HTMLBefore);
+	
+	function ParseSettings($SettingsStr)
+	{
+		$Settings = Array();
+		$IndividualSettings = $SettingsStr.split(";");
+		for($i = 0; $i < $IndividualSettings.length; $i++)
+		{
+			$S = $IndividualSettings[$i].split("=");
+			$Settings[$S[0]] = $S[1];
+		}
+
+		return $Settings;
+	}
+	
+	function PlayCustomAlarm()
+	{
+		$Alarm = document.getElementById('<@itemid>customalarm');
+		$HasRed = <#if value="@status" contains="hasred" then="true" else="false" varexpand="value,contains">;
+		$HasYellow = <#if value="@status" contains="hasyellow" then="true" else="false" varexpand="value,contains">;
+	
+      	if($HasYellow && typeof $Settings["WarningAlarm"] !== 'undefined')
+		{
+			$Alarm.innerHTML = "<source src=\"/sounds/" + $Settings["WarningAlarm"] + "\" type=\"audio/ogg\">";
+		}
+		
+		if($HasRed && typeof $Settings["ErrorAlarm"] !== 'undefined)
+		{
+			$Alarm.innerHTML = "<source src=\"/sounds/" + $Settings["ErrorAlarm"] + "\" type=\"audio/ogg\">";
+		}
+		
+		if($HasRed || $HasYellow)
+		{
+			$Alarm.load();
+			$Alarm.play();
+		}
+	}
+	
+	$(document).ready(function()
+	{
+		setTimeout(PlayCustomAlarm, 2000);
+	});
+
+</script>
+	
+</div>
