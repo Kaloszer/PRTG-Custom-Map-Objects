@@ -1,0 +1,59 @@
+<!-- Custom HTML: Banner-transparent-onlyalerts-->
+
+<div class="map_object <#sensor type="colorclassofstate" prefix="status-" mode="short" id="<@objectid>">" id="<@itemid>" objectid="<@objectid>" subid="<@subid>" style="min-width:100%;min-height:80px;<#mapobject type="coordinates" subid="<@subid>" mode="<@editmode>">">
+<#lang key="htm.ownhtmlonly.enterownhtml" default="Enter your own HTML in field 'HTML Before'!" var="ownhtml">
+    
+    <#mapobject type="htmlafter" subid="<@subid>">
+    <#mapobject varexpand="content" showfor="previewonly" content="@ownhtml">
+	<#objectproperty name="Name" id="<@objectid>" var="objectnametest">
+	
+	
+	<marquee Id="<@itemid>Banner" scrollamount="15" direction="left";" >
+		<h1 Id="<@itemid>SlidingMessage" style="font-size:25px;color:black;bold;">
+		</h1>
+	</marquee>
+	
+	<div id="<@itemid>_JSON" style="visibility:hidden;height:0px;width:0px;">
+		<#table
+		  content="sensors"
+		  id="<@objectid>"
+		  columns="group,device,message,downtimesince"
+		  count="3"
+		  sortby="-downtimesince"
+		  links="false"
+		  sortable="false"
+		  infoheader="false"
+		  output="json"
+		  noraw="0"
+		  filter_tags="@tag(<@tagfilterstring>)"
+		  filter_status="5">
+	</div>
+	
+	
+	<script type="text/javascript">
+
+		status = "<#sensor type="colorclassofstate" mode="short" id="<@objectid>">";
+		
+		$Tag = document.getElementById("<@itemid>Banner");
+		$Message = document.getElementById("<@itemid>SlidingMessage");
+		
+		$JsonTag = document.getElementById("<@itemid>_JSON");
+		$JSONParsed = JSON.parse($JsonTag.innerHTML.replace(/<(?:.|\n)*?>/gm, ''));
+		
+		$Status = '<#objectstatus name="status" show="textraw" id="<@objectid>">';
+
+		$Down = '<#objectstatus name="downsens" show="textraw" id="<@objectid>">';
+		
+
+		if($Down != '')
+			$Message.innerHTML += $Down + " Down";
+				
+		if($JSONParsed.sensors.length >= 1)
+		{
+			$ErrorSensor = $JSONParsed.sensors[0];
+			$ErrorMessage = $ErrorSensor.device + " - " + $ErrorSensor.sensor + ": " + $ErrorSensor.message_raw;
+			$Message.innerHTML += " - " + $ErrorMessage;
+		}
+	
+	</script>
+</div>
